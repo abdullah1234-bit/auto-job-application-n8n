@@ -1,0 +1,711 @@
+{
+  "name": "Auto Job Application Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "df49672e-2d5f-4d82-929c-fc1fadc46ba7",
+      "name": "Check For New Jobs (every 6h)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "q",
+              "name": "searchQuery",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "r",
+              "name": "minRelevance",
+              "value": 70,
+              "type": "number"
+            },
+            {
+              "id": "n",
+              "name": "candidateName",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "e",
+              "name": "notifyEmail",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "cv",
+              "name": "baseCV",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "cl",
+              "name": "baseCoverLetter",
+              "value": "OPTIONAL: paste a base cover letter or leave as is",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0839027f-809b-486a-8772-bb87a15577dc",
+      "name": "Job Search Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.arbeitnow.com/api/job-board-api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "search",
+              "value": "={{ $(\"Job Search Config\").item.json.searchQuery }}"
+            },
+            {
+              "name": "page",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "da42bcd1-a2e1-4afb-a807-60b80e27812b",
+      "name": "Search Jobs (Arbeitnow)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        448,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "239b536e-1fba-44a2-854e-3472c1323fc1",
+      "name": "Split Out Each Job",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        672,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "uz7tIJCOTyzGJkIe",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "job_id",
+              "keyValue": "={{ $json.slug }}"
+            }
+          ]
+        }
+      },
+      "id": "4237193c-297a-47d9-8c1b-1b3fad7de213",
+      "name": "Filter New Jobs",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "uz7tIJCOTyzGJkIe",
+          "cachedResultName": "Job Application Tracker"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_id": "={{ $json.slug }}",
+            "title": "={{ $json.title }}",
+            "company": "={{ $json.company_name }}",
+            "apply_link": "={{ $json.url }}",
+            "status": "processing",
+            "processed_at": "={{ $now.toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "apply_link",
+              "displayName": "apply_link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c615be17-c2c5-4174-aee0-b38d04cc9a02",
+      "name": "Mark Job As Seen",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1344,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are tailoring a job application.\n\n== CANDIDATE ==\n{{ $(\"Job Search Config\").item.json.candidateName }}\n\n== CV (use only facts here, never invent) ==\n{{ $(\"Job Search Config\").item.json.baseCV }}\n\n== JOB ==\nTitle: {{ $(\"Process Each Job\").item.json.title }}\nCompany: {{ $(\"Process Each Job\").item.json.company_name }}\nLocation: {{ $(\"Process Each Job\").item.json.location }}\nDescription: {{ $(\"Process Each Job\").item.json.description }}\n\nReturn the 5 structured fields:\n1. relevance_score 0-100 (how well the candidate fits)\n2. matches_field true/false\n3. fit_summary 2-3 sentences\n4. tailored_cover_letter max 250 words using only real CV facts\n5. cv_changes concrete suggestions on what to emphasise",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an expert career coach. Only use facts from the CV. Never fabricate employers, dates or qualifications. Return only the structured output."
+        }
+      },
+      "id": "43a7631c-1fa2-4b6a-a493-afc855228b8c",
+      "name": "Tailor CV & Cover Letter",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1568,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-6",
+          "cachedResultName": "Claude Sonnet 4.6"
+        },
+        "options": {
+          "maxTokensToSample": 2000,
+          "temperature": 0.3
+        }
+      },
+      "id": "7f9b1ec3-670e-4fe5-ab7c-297b28a686d5",
+      "name": "Claude Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.5,
+      "position": [
+        1584,
+        336
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "CBLXyWZZwNnsaFMp",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \"relevance_score\": 85, \"matches_field\": true, \"fit_summary\": \"Strong fit because...\", \"tailored_cover_letter\": \"Dear Hiring Manager...\", \"cv_changes\": \"Emphasise Python and ML project X...\" }"
+      },
+      "id": "6335fefa-c941-4d79-9d24-31a0400b70e3",
+      "name": "Parse Application",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1712,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.output.relevance_score }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              },
+              "rightValue": "={{ $(\"Job Search Config\").item.json.minRelevance }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6f4292f2-229b-449b-9fa2-9bb9173105c5",
+      "name": "Relevant Enough?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1920,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "sendTo": "={{ $(\"Job Search Config\").item.json.notifyEmail }}",
+        "subject": "={{ \"New Werkstudent match: \" + $(\"Process Each Job\").item.json.title + \" at \" + $(\"Process Each Job\").item.json.company_name }}",
+        "message": "={{ \"New Werkstudent job matched your profile!\\n\\n\" +\"Role: \" + $(\"Process Each Job\").item.json.title + \"\\n\" +\"Company: \" + $(\"Process Each Job\").item.json.company_name + \"\\n\" +\"Location: \" + $(\"Process Each Job\").item.json.location + \"\\n\" +\"Match Score: \" + $(\"Tailor CV & Cover Letter\").item.json.output.relevance_score + \"/100\\n\" +\"Apply Link: \" + $(\"Process Each Job\").item.json.url + \"\\n\\n\" +\"WHY IT FITS:\\n\" + $(\"Tailor CV & Cover Letter\").item.json.output.fit_summary + \"\\n\\n\" +\"TAILORED COVER LETTER:\\n\" + $(\"Tailor CV & Cover Letter\").item.json.output.tailored_cover_letter + \"\\n\\n\" +\"CV TWEAKS:\\n\" + $(\"Tailor CV & Cover Letter\").item.json.output.cv_changes }}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double",
+            "approveLabel": "Apply to this job",
+            "disapproveLabel": "Skip this job"
+          }
+        },
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "resumeAmount": 7,
+              "resumeUnit": "days"
+            }
+          },
+          "appendAttribution": false
+        }
+      },
+      "id": "b4e889d0-9405-43ad-af96-8225ef984105",
+      "name": "Request Approval",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2144,
+        16
+      ],
+      "webhookId": "0c171d1b-56df-486f-bc33-72c28e0c26ba",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "fM0qwY7O1tLXFykm",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.data.approved }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              },
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cff429c9-f308-4365-861a-2d5843c52676",
+      "name": "Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2368,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $(\"Job Search Config\").item.json.notifyEmail }}",
+        "subject": "={{ \"APPLY NOW: \" + $(\"Process Each Job\").item.json.title + \" @ \" + $(\"Process Each Job\").item.json.company_name }}",
+        "message": "={{ \"<h2>Ready to Apply!</h2>\" +\"<p><b>Role:</b> \" + $(\"Process Each Job\").item.json.title + \"<br>\" +\"<b>Company:</b> \" + $(\"Process Each Job\").item.json.company_name + \"<br>\" +\"<b>Location:</b> \" + $(\"Process Each Job\").item.json.location + \"<br>\" +\"<b>Apply Link:</b> <a href='\" + $(\"Process Each Job\").item.json.url + \"'>\" + $(\"Process Each Job\").item.json.url + \"</a></p>\" +\"<h3>Your Tailored Cover Letter</h3>\" +\"<p style='white-space:pre-wrap'>\" + $(\"Tailor CV & Cover Letter\").item.json.output.tailored_cover_letter + \"</p>\" +\"<h3>CV Tweaks for This Role</h3>\" +\"<p style='white-space:pre-wrap'>\" + $(\"Tailor CV & Cover Letter\").item.json.output.cv_changes + \"</p>\" }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "49848d07-593f-42a5-8975-2e87b6770bac",
+      "name": "Send Apply Package",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2592,
+        224
+      ],
+      "webhookId": "97d3d8de-9dcd-4207-ad22-752dffdf2d73",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "fM0qwY7O1tLXFykm",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "379215fb-f17c-48f3-abd8-f878e0793aed",
+      "name": "Process Each Job",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        496
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "01bbad5b-fc89-4932-bb2e-e0b9c2da078e",
+      "name": "Skipped By You",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2592,
+        448
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "7b4b8f6c-4fe3-4e6e-b206-2b46ba1efcad",
+      "name": "Below Relevance Threshold",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2144,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ✅ Setup Checklist\n\n**Step 1 — Job Search Config node:**\n- Set searchQuery (e.g. \"Werkstudent AI Machine Learning\")\n- Paste your full CV text into baseCV\n- Check notifyEmail is correct\n\n**Step 2 — Claude Model node:**\n- Add Anthropic API credential\n\n**Step 3 — Request Approval + Send Apply Package nodes:**\n- Add Gmail OAuth2 credential on both\n\n**Step 4 — Activate workflow (top right toggle)**\n\nRuns every 6h automatically\nYou get an email per match — click Approve or Skip\nOn approve: full apply package sent to your inbox",
+        "height": 200,
+        "width": 300,
+        "color": 4
+      },
+      "id": "223fc04d-e606-4dd0-965b-3d6c934c2931",
+      "name": "Sticky Note 3ab549f0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Job Source: Arbeitnow\n\nFREE API — NO API key needed!\nSpecialised in Germany jobs:\n- Werkstudent roles\n- English-speaking positions\n- AI / ML / Tech roles\n\nChange searchQuery in Job Search Config\ne.g. \"Werkstudent Data Science\" or\n\"Werkstudent Python Munich\"",
+        "height": 200,
+        "width": 300,
+        "color": 3
+      },
+      "id": "08c2d97f-174e-4c62-ac89-d59c069ea46b",
+      "name": "Sticky Note 0ca38abe",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## How Approval Works\n\n1. Claude scores & tailors each job\n2. Only jobs above minRelevance (default 70) get emailed\n3. Email has two buttons:\n   \"Apply to this job\" - sends full package\n   \"Skip this job\" - moves to next\n4. Auto-expires after 7 days if no reply",
+        "height": 200,
+        "width": 300,
+        "color": 5
+      },
+      "id": "942b134c-6df3-45fb-926e-12379b750b48",
+      "name": "Sticky Note 1aa202ff",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -48
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Check For New Jobs (every 6h)": {
+      "main": [
+        [
+          {
+            "node": "Job Search Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job Search Config": {
+      "main": [
+        [
+          {
+            "node": "Search Jobs (Arbeitnow)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Jobs (Arbeitnow)": {
+      "main": [
+        [
+          {
+            "node": "Split Out Each Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Each Job": {
+      "main": [
+        [
+          {
+            "node": "Filter New Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter New Jobs": {
+      "main": [
+        [
+          {
+            "node": "Process Each Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Job As Seen": {
+      "main": [
+        [
+          {
+            "node": "Tailor CV & Cover Letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tailor CV & Cover Letter": {
+      "main": [
+        [
+          {
+            "node": "Relevant Enough?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Tailor CV & Cover Letter",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Application": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Tailor CV & Cover Letter",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relevant Enough?": {
+      "main": [
+        [
+          {
+            "node": "Request Approval",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Below Relevance Threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Approval": {
+      "main": [
+        [
+          {
+            "node": "Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved?": {
+      "main": [
+        [
+          {
+            "node": "Send Apply Package",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skipped By You",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Apply Package": {
+      "main": [
+        [
+          {
+            "node": "Process Each Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Each Job": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Mark Job As Seen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skipped By You": {
+      "main": [
+        [
+          {
+            "node": "Process Each Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Below Relevance Threshold": {
+      "main": [
+        [
+          {
+            "node": "Process Each Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "95902ece-910f-4a63-b9e8-35ebb561a6d7",
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "665692e14e5a21486a65075cb1962c67888ddb2c31111222b648a741446573b1"
+  },
+  "nodeGroups": [],
+  "id": "guXq1k2hIlEZHrtg",
+  "tags": []
+}
